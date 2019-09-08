@@ -103,4 +103,22 @@ WARNING: Noo Yawk
 
 ---
 
-# the how: approach
+# the how: the problems
+
+<!-- NOTES:
+ - Govet broke
+ - gosec is mixed
+ - Go's package management is weird...
+ - it's hard to do, unlike say npm audit or cargo-audit
+ -->
+- go static analysis tools are a mixed bag
+- minimal tooling specifically for k8s **at a code level**
+- enormous code base
+- with lots of components, styles, companies...
+
+---
+
+# the how
+
+- mainly manual: lots of `ack`, some code indexing
+- 
