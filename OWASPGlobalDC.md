@@ -110,15 +110,174 @@ WARNING: Noo Yawk
  - gosec is mixed
  - Go's package management is weird...
  - it's hard to do, unlike say npm audit or cargo-audit
+ - show of hands, how many have audited large code bases without tooling help?
  -->
 - go static analysis tools are a mixed bag
 - minimal tooling specifically for k8s **at a code level**
 - enormous code base
 - with lots of components, styles, companies...
+- minimal dataflow, connection analysis, &c.
 
 ---
 
-# the how
+# the how: top level approach
 
-- mainly manual: lots of `ack`, some code indexing
-- 
+1. Kubernetes in Action + Running Clusters
+1. container sec class at SteelCon
+1. "Kubernetes Clusters I have Known and Loved"
+1. prep the code into `audit-kubernetes`     
+
+---
+
+# the how: code
+
+- mainly manual: lots of `ack` (me) or Goland (normal people), some code indexing
+- internal checklist of golang problems
+- minimal: govet, gosec, errcheck 
+  - actually did help to kickstart
+
+---
+
+# the how: code (part deux)
+
+sidebar if I had to again:
+
+- ~~use signal, use tor~~ use Semmle, use Custom Golang tooling
+- Nico has found **hundreds** of bugs with simple searches in Semmle
+- More krf
+
+---
+
+# the how: threat modeling
+
+- I use a slightly-different approach 
+  - Brian Glas (@infosecdad) & I have worked on for ~10 years
+- Controls, Data, Gaps, Inherited Controls... all par for the course
+- **NEW** Mozilla Rapid Risk Assessment (RRA) docs 
+
+---
+
+# the how: threat modeling FLOSS?
+
+- what do we need in threat modeling?
+  - ~~defined users~~ distributed user base
+  - ~~responsible devs~~ distributed, unpaid dev base
+  - ~~business direction~~ minimal overarching purpose
+
+---
+
+# the how: threat modeling FLOSS
+
+1. design rough dataflow
+    1. k8s docs aren't fun
+    1. K8s in Action, but slightly out of date  
+1. talk with developers
+1. write up notes
+1. report threats, control analysis, &c. 
+ 
+---
+
+# the how: talk with developers 
+
+1. Pre-fill RRAs
+2. Email SIGs for meetings
+3. Meeting with Devs
+4. Send RRA documents back to SIGs for PR
+5. Iterate
+6. Write Report
+
+### https://github.com/trailofbits/audit-kubernetes/commits/master/notes/stefan.edwards/rra
+
+---
+
+# the what: 3 things
+
+1. devs have widely varied backgrounds
+2. Linux interfaces are non-trivial to code against
+3. preponderance of (policy) choice 
+
+---
+
+# the what: devs
+
+- devs come from a wide background
+- what does this do?
+
+```
+        v, err := strconv.Atoi("4294967377")
+        g := int32(v)
+        fmt.Printf("v: %v, g: %v\n", v, g);
+```
+
+---
+
+# the what: devs
+
+- Issues?
+  - Unsigned to Signed
+  - Wrong Width: `$GO_ARCH`-specific width to 16/32/64 bits
+  - Both: many flows of `strconv.Atoi` => `int16`
+- devs may not have background on machine-width ints 
+
+---
+
+# the what: devs 
+
+- We found a number of flows from Incorrect Widths/Sign
+- Nico Waisman (of Semmle) found _many_
+
+```
+if len(s) > 1 && (s[0] == 'E' || s[0] == 'e') {
+parsed, err := strconv.ParseInt(string(s[1:]), 10, 64)
+	if err != nil {
+		return 0, 0, DecimalExponent, false
+	}
+	return 10, int32(parsed), DecimalExponent, true
+}
+```
+
+---
+
+# the what: devs
+
+logging things that shouldn't be logged, missing logging, log rotation
+
+---
+
+# the what: devs
+
+file permissions 
+easy to mess up, harder to fix wholistically 
+
+---
+
+# the what: linux
+
+cgroups
+
+---
+
+# the what: linux
+
+pid checks are not what you expect 
+
+---
+
+# the what: linux
+
+seccomp is actually hard
+
+---
+
+# the what: policy
+
+PSP not on by default
+
+---
+
+# the what: policy
+
+NetworkPolicy is only applied if you choose a CNI that applies it
+
+---
+
