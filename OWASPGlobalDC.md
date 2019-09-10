@@ -27,6 +27,15 @@ WARNING: Noo Yawk
 
 ---
 
+<!--
+
+- what we were actual asked to do
+- how we did it
+- and some of the things we actually found 
+- we'll probably run out of time, so you can view the slides 
+
+-->
+
 # outline
 1. intro
 1. outline
@@ -159,6 +168,13 @@ sidebar if I had to again:
 
 # the how: threat modeling FLOSS?
 
+<!--
+- what are the things we need for a threat model?
+- defined users? nope we don't have them
+- responsible devs? nope, most aren't paid directly by CNCF
+- business direction? nope, many applications, many users, different spaces
+-->
+
 - what do we need in threat modeling?
   - ~~defined users~~ distributed user base
   - ~~responsible devs~~ distributed, unpaid dev base
@@ -217,7 +233,8 @@ sidebar if I had to again:
   - Unsigned to Signed
   - Wrong Width: `$GO_ARCH`-specific width to 16/32/64 bits
   - Both: many flows of `strconv.Atoi` => `int16`
-- devs may not have background on machine-width ints 
+- devs may not have background on machine-width ints
+- TOB-K8S-015 & Appendix B 
 
 ---
 
@@ -240,15 +257,120 @@ parsed, err := strconv.ParseInt(string(s[1:]), 10, 64)
 
 # the what: devs
 
-logging things that shouldn't be logged, missing logging, log rotation
+- a wide range of audit/logging backgrounds
+- high security vs standard applications
+- end result?
+  - TOB-K8S-001: Bearer tokens are revealed in logs
+  - TOB-K8S-026: Directory traversal of host logs running kube-apiserver and kubelet
+  - TOB-K8S-007: Log rotation is not atomic
+  - TOB-K8S-TM05: Credentials exposed in environment variables and command-line
+  - TOB-K8S-TM06: Names of secrets are leaked in logs 
+
+<!-- logging things that shouldn't be logged, missing logging, log rotation -->
+
+---
+
+# the what: devs 
+
+<!-- 
+
+- not just organizationally distributed
+- not just geographically distributed
+- contextually distributed too
+- the dev working on round trip may not have context for what happens in an admission controller like authN
+- the dev *also* may not be testing with the same configuration as deployed in prod 
+  -  For example: some providers *only* use two-way TLS, so would never see a bearer token in logs  
+
+-->
+
+- devs often do not have context between items 
+- diff components have diff devs
+- innocuous code leads to problems
+
+```
+if rt.levels[debugCurlCommand] {
+   klog.Infof("%s", regInfo.toCurl())
+}
+
+if rt.levels[debugRequestHeaders] {
+   // ...
+}
+```
+
+---
+
+# the what: devs 
+
+- we need logs!
+- logs are hard coded to go to "/var/log"
+- we need to see & display logs
+- what else lives in /var/log?
 
 ---
 
 # the what: devs
 
-file permissions 
-easy to mess up, harder to fix wholistically 
+- innocuous code:
 
+```
+func logFileListHandler(req *restful.Request, 
+resp *restful.Response) {
+       logdir := "/var/log"
+       http.ServeFile(resp.ResponseWriter, 
+       req.Request, logdir)
+   }
+```
+
+---
+
+<!--
+
+now suddenly anyone with k8s access now has access to logs from the host, or anything that hits /var/log, and
+since it runs as root... they can read them all.
+
+-->
+
+![log leak](log-leak.png)
+
+---
+
+# the what: devs
+ 
+- k8s uses many files
+- k8s **does not** have standard routines for permissions nor a model
+- TOB-K8S-004: Pervasive world-accessible file permissions
+
+---
+
+# the what: devs
+
+<!-- 
+
+again, developers don't often have context, so they don't know
+where a particular routine will be used, and so they just write
+something that works, regardless of what it leaks to the world...
+
+Can anyone spot what's wrong with these lines?
+-->
+
+```
+cluster/images/etcd/migrate/data_dir.go:49:
+err := os.MkdirAll(path, 0777)
+cluster/images/etcd/migrate/data_dir.go:87:
+err := os.MkdirAll(backupDir, 0777)
+```
+
+---
+
+# the what: devs
+
+- not picking on etcd
+  - logs
+  - credentials
+  - other info
+- you **must** pay attention to operational concerns 
+  - no on is coming, it's up to us 
+  
 ---
 
 # the what: linux
