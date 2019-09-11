@@ -474,13 +474,85 @@ lastly, let's talk about seccomp.
 
 # the what: policy
 
-PSP not on by default
+- Kubernetes allows us to apply policies
+  - Think PSP & NetworkPolicy
+- two main issues:
+  - application silently fails
+  - can have complex failure modes
 
 ---
 
 # the what: policy
 
-NetworkPolicy is only applied if you choose a CNI that applies it
+<!-- PSP is an admission controller, basically a gate keeper,
+for k8s clusters. it allows cluster admins to restrict the 
+actions a service account can take. In doing so, it returns 
+a validation error. This is good, right?
+-->
+
+- PodSecurityPolicy (PSP)
+- restricts service accounts
+- validation error 
+- good... right?
 
 ---
+
+# the what: policy
+
+<!-- 
+Originally, it was disabled by default, and attempting to 
+apply it actually met with no warning. So in essence, you could
+create a super strong policy 
+-->
+
+- was disabled
+- no warning
+- result?
+  - I've created a strong policy...
+  - with no application
+
+---
+
+# the what: policy
+
+- NetworkPolicy too
+- restricts ingress/egress
+- sets up inter-pod comms
+- oops! chose a CNI that doesn't apply NetworkPolicy
+- TOB-K8S-TM01: Policies may not be applied
+
+---
+
+# the what: policy
+
+- besides silent failure...
+- complex failure mode
+- Many, many components
+- they manage & interact in odd ways
+- for example
+
+---
+
+# the what: policy
+
+<!--
+
+- Many components interact with many other resources
+- the scope of that interaction may change
+- So what stops a request? authN? AuthZ? Admissions Control?
+- This sort of scope change actually leads to components having tacked on security, which leads to problems, such as 
+- `hostPath` restrictions in PSP can actually lead to a bypass 
+
+-->
+
+- complex interactions
+  - AuthN? AuthZ? AC? PSP? WebHook?
+- mo Scope, mo problems
+- PSP includes validation for `hostPath` **BUT**
+- PSP's inclusion leads to `hostPath` validation bypass
+- So, add security, get a vuln (TOB-K8S-038)
+
+---
+
+# Thanks!
 
