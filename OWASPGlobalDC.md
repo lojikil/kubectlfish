@@ -351,6 +351,9 @@ where a particular routine will be used, and so they just write
 something that works, regardless of what it leaks to the world...
 
 Can anyone spot what's wrong with these lines?
+
+- In docs, the mantra is "access to etcd is root access to the cluster"
+- if backups are world writeable/readable, huge problems
 -->
 
 ```
@@ -364,6 +367,14 @@ err := os.MkdirAll(backupDir, 0777)
 
 # the what: devs
 
+<!--
+
+- there are *many* things we have to be careful of
+- logs, credentials on hosts, &c. all have file permissions issues
+- many of these operational concerns fall onto operators' shoulders 
+
+-->
+
 - not picking on etcd
   - logs
   - credentials
@@ -375,19 +386,89 @@ err := os.MkdirAll(backupDir, 0777)
 
 # the what: linux
 
-cgroups
+<!-- meant for "container orchestration" via "pods"
+
+but containers themselves are a lie; in theory they're an separation boundary, in reality they're just a set of 
+system calls atop the same kernel everything else runs
+-->
+
+- k8s runs "pods"
+- containers are a **lie**
+- theory: containers are separation boundaries
+- reality: namespaces + cgroups + ... = same kernel
+- let's look at  cgroups
 
 ---
 
 # the what: linux
 
-pid checks are not what you expect 
+<!-- interaction with PIDs and cgroups, combined with
+some misunderstanding of what is *actually* relayed by
+cgroups 
+
+This leads to at least two-direct cgroup issues...
+-->
+
+- resource allocation/specification
+- hierarchical model of groupings
+- sometimes moved
+- Issues?
+  - TOB-K8S-022: TOCTOU when moving PID to manager’s cgroup via kubelet
+  - TOB-K8S-021: Improper fetching of PIDs allows incorrect cgroup movement
 
 ---
 
 # the what: linux
 
-seccomp is actually hard
+- TOB-K8S-022 allows privesc
+- Attacker can now read/write host devices
+  - ... limited by AppArmor now 
+
+---
+
+# the what: linux
+
+<!-- likewise, PID checks are not what you expect! -->
+
+- PIDs are also hard, ala TOB-K8S-022
+- But so is `procfs` in general
+- What does this code do?
+
+```
+func isKernelPid(pid int) bool {
+       _, err := os.Readlink(fmt.Sprintf("/proc/%d/exe", 
+       pid))
+       return err != nil
+}
+```
+
+---
+
+# the what: linux
+
+- but wait, there's more!
+- kernel threads not expected to have a `/proc/$PID/exec`
+- We can cause `os.Readlink` to fail
+- Now you're a kernel PID...
+
+---
+
+# the what: linux
+
+<!-- 
+
+lastly, let's talk about seccomp.
+
+- a state that limits a process' interaction with the system
+- extended with seccomp-bpf that filters syscalls
+- used by docker & co limit things
+- can be used in an "unconfined mode" which basically turns it off
+-->
+
+- limits syscalls (or filters with bpf)
+- used by docker, &c for security
+- use of `unconfined` generally a vuln
+  - TOB-K8S-002: Seccomp is disabled by default 
 
 ---
 
