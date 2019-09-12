@@ -48,8 +48,8 @@ WARNING: Noo Yawk
 
 # takeaways
 
-1. large, heterogeneous codebase 
-2. large, heterogeneous devbase
+1. large, heterogeneous codebase (~3.7m SLoC) 
+2. developers have different threat model than yours
 3. lurking assumptions, threats, and vulnerabilities 
 
 ## github.com/trailofbits/audit-kubernetes
@@ -58,9 +58,20 @@ WARNING: Noo Yawk
 
 # the why: audit objectives
 
+<!--
+
+- low hanging fruit: meant to find _obvious_ bugs, and reduce their number
+- threat model: understand the complete data flow from start to finish
+- deliver a set of recommendations for running k8s on your lonesome
+
+-->
+
 - first public audit of Kubernetes from the CNCF
 - meant to find new bugs
-- desired result? low hanging fruit & threat model
+- desired result?
+  - low hanging fruit
+  - threat model
+  - relatively secure base configuration 
 
 ---
 
@@ -70,6 +81,10 @@ WARNING: Noo Yawk
 - Helm/Brigade/Whatever bugs
 - cloud-provider specific bugs
 - previously-known issues
+- that means
+  - novel bugs
+  - open source system
+  - with many eyes & users  
 
 ---
 
@@ -144,6 +159,8 @@ WARNING: Noo Yawk
 - internal checklist of golang problems
 - minimal: govet, gosec, errcheck 
   - actually did help to kickstart
+
+![men who stare at code](code.png)
 
 ---
 
@@ -413,7 +430,7 @@ This leads to at least two-direct cgroup issues...
 - hierarchical model of groupings
 - sometimes moved
 - Issues?
-  - TOB-K8S-022: TOCTOU when moving PID to manager’s cgroup via kubelet
+  - TOB-K8S-022: TOCTOU when moving PID to managerâ€™s cgroup via kubelet
   - TOB-K8S-021: Improper fetching of PIDs allows incorrect cgroup movement
 
 ---
