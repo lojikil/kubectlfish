@@ -56,6 +56,17 @@ WARNING: Noo Yawk
 
 ---
 
+# the why
+
+- Cloud Native Computing Foundation (CNCF)
+- Linux Foundation project
+- "owns" k8s
+- promotes containers
+- first _code level_ public audit
+
+---
+
+
 # the why: audit objectives
 
 <!--
@@ -66,7 +77,6 @@ WARNING: Noo Yawk
 
 -->
 
-- first public audit of Kubernetes from the CNCF
 - meant to find new bugs
 - desired result?
   - low hanging fruit
