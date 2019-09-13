@@ -63,6 +63,7 @@ WARNING: Noo Yawk
 - "owns" k8s
 - promotes containers
 - first _code level_ public audit
+  - & TM, whitepaper, reference impl... 
 
 ---
 
@@ -88,13 +89,14 @@ WARNING: Noo Yawk
 # the why: anti-objectives
 
 - "red team" (adversary) lateral movement w/o novel bug
-- Helm/Brigade/Whatever bugs
+- Helm/Brigade/kops/Whatever bugs
 - cloud-provider specific bugs
 - previously-known issues
 - that means
   - novel bugs
   - open source system
-  - with many eyes & users  
+  - with many eyes & users
+  - within base k8s   
 
 ---
 
@@ -137,6 +139,10 @@ WARNING: Noo Yawk
 
 ---
 
+![understanding the arch](arch-understanding.png)
+
+---
+
 # the how: the problems
 
 <!-- NOTES:
@@ -157,9 +163,10 @@ WARNING: Noo Yawk
 # the how: top level approach
 
 1. Kubernetes in Action + Running Clusters
-1. container sec class at SteelCon
+1. container sec class
 1. "Kubernetes Clusters I have Known and Loved"
-1. prep the code into `audit-kubernetes`     
+1. prep the code into `audit-kubernetes`
+    1. https://github.com/trailofbits/audit-kubernetes       
 
 ---
 
@@ -167,8 +174,8 @@ WARNING: Noo Yawk
 
 - mainly manual: lots of `ack` (me) or Goland (normal people), some code indexing
 - internal checklist of golang problems
-- minimal: govet, gosec, errcheck 
-  - actually did help to kickstart
+- minimal: govet, gosec, errcheck (actually did help to kickstart)
+- `hypothesis => stare at code => ... => profit`
 
 ![men who stare at code](code.png)
 
@@ -179,8 +186,8 @@ WARNING: Noo Yawk
 sidebar if I had to again:
 
 - ~~use signal, use tor~~ use Semmle, use Custom Golang tooling
-- Nico has found **hundreds** of bugs with simple searches in Semmle
-- More krf
+- Nico has found **24 more instances** of bugs with simple searches in Semmle
+- More kernel faulting via krf
 
 ---
 
@@ -213,9 +220,9 @@ sidebar if I had to again:
 
 1. design rough dataflow
     1. k8s docs aren't fun
-    1. K8s in Action, but slightly out of date  
+    1. k8s in Action, but slightly out of date  
 1. talk with developers
-1. write up notes
+1. write up notes (lives on GitHub)
 1. report threats, control analysis, &c. 
  
 ---
@@ -235,7 +242,7 @@ sidebar if I had to again:
 
 # the what: 3 things
 
-1. devs have widely varied backgrounds
+1. devs have widely varied skill-levels & backgrounds
 2. Linux interfaces are non-trivial to code against
 3. preponderance of (policy) choice 
 
@@ -440,7 +447,7 @@ This leads to at least two-direct cgroup issues...
 - hierarchical model of groupings
 - sometimes moved
 - Issues?
-  - TOB-K8S-022: TOCTOU when moving PID to managerâ€™s cgroup via kubelet
+  - TOB-K8S-022: TOCTOU when moving PID to manager's cgroup via kubelet
   - TOB-K8S-021: Improper fetching of PIDs allows incorrect cgroup movement
 
 ---
@@ -473,8 +480,7 @@ func isKernelPid(pid int) bool {
 
 # the what: linux
 
-- but wait, there's more!
-- kernel threads not expected to have a `/proc/$PID/exec`
+- kernel threads not expected to have a `/proc/$PID/exe`
 - We can cause `os.Readlink` to fail
 - Now you're a kernel PID...
 
@@ -492,10 +498,18 @@ lastly, let's talk about seccomp.
 - can be used in an "unconfined mode" which basically turns it off
 -->
 
-- limits syscalls (or filters with bpf)
+- seccomp?
+-  limits syscalls (or filters with bpf)
 - used by docker, &c for security
 - use of `unconfined` generally a vuln
   - TOB-K8S-002: Seccomp is disabled by default 
+
+---
+
+# the what: linux
+
+- Linux APIs are hard
+- misconfigured or unapplied
 
 ---
 
@@ -572,7 +586,7 @@ create a super strong policy
 
 -->
 
-- complex interactions
+- where do we restrict? complex interactions
   - AuthN? AuthZ? AC? PSP? WebHook?
 - mo Scope, mo problems
 - PSP includes validation for `hostPath` **BUT**
@@ -582,4 +596,7 @@ create a super strong policy
 ---
 
 # Thanks!
+
+- wild ride, thanks for joining
+- Questions?
 
