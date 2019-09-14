@@ -253,7 +253,7 @@ sidebar if I had to again:
 - devs come from a wide background
 - what does this do?
 
-```
+```go
         v, err := strconv.Atoi("4294967377")
         g := int32(v)
         fmt.Printf("v: %v, g: %v\n", v, g);
